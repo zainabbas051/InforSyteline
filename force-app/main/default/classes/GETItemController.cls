@@ -9,6 +9,20 @@ public with sharing class GETItemController {
         string csRec = label.InforStyline_TestToyoConfig;
         string accToken = GetAccessTokenController.makeAccessTokenCallout(csRec);
         InforGETIemsWrapper itemWraper = new InforGETIemsWrapper();
+        InforSytelineCalloutsConfigs__c ProdCsRec = InforSytelineCalloutsConfigs__c.getInstance('GET Products');
+        string modDateFilter = '';
+        if(ProdCsRec!= null && ProdCsRec.Last_Sync_Date__c != null)
+        {
+            modDateFilter = 'RecordDate >= '+Date.valueOf(ProdCsRec.Last_Sync_Date__c);
+        }
+        if(!String.isBlank(qryFilter) && !String.isBlank(modDateFilter)){
+            qryFilter += ' AND ' + modDateFilter;
+        }
+        else if(String.isBlank(qryFilter) && !String.isBlank(modDateFilter))
+        {
+            qryFilter = modDateFilter;
+        }
+
         if(!String.isBlank(accToken)){
             httpResponse res = InforStylineCalloutsUtil.loadDataCall(accToken, IDOName, qryFlds, qryFilter, qryOrderBy, qryLimit);
             if(qryLimit == null || qryLimit == 0 || qryLimit > 100){
@@ -19,6 +33,7 @@ public with sharing class GETItemController {
 
                 itemWraper = parsedResponse(res);
                 msgtoReturn = processParsedResponse(itemWraper);
+                HTTPHandler.updateSyncDateInCS('GET Products', datetime.now());
             }
         }
         return msgtoReturn;

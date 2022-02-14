@@ -8,6 +8,19 @@ public without sharing class GETCustomerController {
         string csRec = label.InforStyline_TestToyoConfig;
         string accToken = GetAccessTokenController.makeAccessTokenCallout(csRec);
         InforGETCustomersWrapper custWraper = new InforGETCustomersWrapper();
+        InforSytelineCalloutsConfigs__c AccCsRec = InforSytelineCalloutsConfigs__c.getInstance('GET Accounts');
+        string modDateFilter = '';
+        if(AccCsRec!= null && AccCsRec.Last_Sync_Date__c != null)
+        {
+            modDateFilter = 'RecordDate >= '+Date.valueOf(AccCsRec.Last_Sync_Date__c);
+        }
+        if(!String.isBlank(qryFilter) && !String.isBlank(modDateFilter)){
+            qryFilter += ' AND ' + modDateFilter;
+        }
+        else if(String.isBlank(qryFilter) && !String.isBlank(modDateFilter))
+        {
+            qryFilter = modDateFilter;
+        }
         if(!String.isBlank(accToken)){
             httpResponse res = InforStylineCalloutsUtil.loadDataCall(accToken, IDOName, qryFlds, qryFilter, qryOrderBy, qryLimit);
             if(res.getStatusCode() == 200)
@@ -20,6 +33,7 @@ public without sharing class GETCustomerController {
 
                     custWraper = parsedResponse(res);
                     msgtoReturn = processParsedResponse(custWraper);
+                    HTTPHandler.updateSyncDateInCS('GET Accounts', datetime.now());
                 }
             }
         }

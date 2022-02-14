@@ -38,6 +38,7 @@ public without sharing class POSTCustomerController {
             msg = string.valueOf(resp.getStatusCode()) + '-' + resp.getBody(); 
         }
         System.debug('msg= '+ msg);
+        HTTPHandler.updateSyncDateInCS('POST Accounts', datetime.now());
         return msg;
     }
 }

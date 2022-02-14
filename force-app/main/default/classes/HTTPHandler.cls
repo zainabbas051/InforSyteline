@@ -29,4 +29,12 @@ public without sharing class HTTPHandler {
         return response;
         
     }
+
+    public static void updateSyncDateInCS(string CallOutName, datetime syncDate){
+        InforSytelineCalloutsConfigs__c csRec = InforSytelineCalloutsConfigs__c.getInstance(CallOutName);
+        if(csRec != null){
+            csRec.Last_Sync_Date__c = syncDate;
+            update csRec;
+        }
+    }
 }

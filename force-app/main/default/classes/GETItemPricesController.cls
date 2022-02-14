@@ -8,6 +8,19 @@ public with sharing class GETItemPricesController {
         string msgtoReturn = '';
         string csRec = label.InforStyline_TestToyoConfig;
         string accToken = GetAccessTokenController.makeAccessTokenCallout(csRec);
+        InforSytelineCalloutsConfigs__c PBECsRec = InforSytelineCalloutsConfigs__c.getInstance('GET PBEs');
+        string modDateFilter = '';
+        if(PBECsRec!= null && PBECsRec.Last_Sync_Date__c != null)
+        {
+            modDateFilter = 'RecordDate >= '+Date.valueOf(PBECsRec.Last_Sync_Date__c);
+        }
+        if(!String.isBlank(qryFilter) && !String.isBlank(modDateFilter)){
+            qryFilter += ' AND ' + modDateFilter;
+        }
+        else if(String.isBlank(qryFilter) && !String.isBlank(modDateFilter))
+        {
+            qryFilter = modDateFilter;
+        }
         InforGETItemPricesWrapper ItmPrWrap = new InforGETItemPricesWrapper();
         if(!String.isBlank(accToken)){
             httpResponse res = InforStylineCalloutsUtil.loadDataCall(accToken, IDOName, qryFlds, qryFilter, qryOrderBy, qryLimit);
@@ -21,6 +34,7 @@ public with sharing class GETItemPricesController {
 
                     ItmPrWrap = parsedResponse(res);
                     msgtoReturn = processParsedResponse(ItmPrWrap);
+                    HTTPHandler.updateSyncDateInCS('GET PBEs', datetime.now());
                 }
             }
         }
@@ -42,7 +56,7 @@ public with sharing class GETItemPricesController {
         string messageToRet = '';
 
         string PbId = [select id from Pricebook2 where IsStandard = true].id;
-
+        Set<String> setOfUniqueIds = new set<string>();
         list<PricebookEntry> listOfPBEs = new list<PricebookEntry>();
 
         InforGETItemPricesWrapper.Envelope env = wrap.Envelope;
@@ -52,29 +66,45 @@ public with sharing class GETItemPricesController {
         InforGETItemPricesWrapper.Diffgram difgr = ldRes.diffgram;
         InforGETItemPricesWrapper.SLItemPrices SLItmPrc = difgr.SLItemPrices;
         list<InforGETItemPricesWrapper.IDO> listOfIDO = SLItmPrc.IDO;
+        map<string,PricebookEntry> mapOfDistinctPrices = new map<string,PricebookEntry>();
         if(listOfIDO.size() > 0){
             for(InforGETItemPricesWrapper.IDO itmpr : listOfIDO){
-                string uniqueKey = itmpr.CurrCode+'|'+itmpr.EffectDate;
+
+                string uniqueKey = itmpr.ItemUniqueNum+'|'+itmpr.CurrCode; //+'|'+itmpr.EffectDate;
                 PricebookEntry pbe = new PricebookEntry();
                 pbe.EffectDate__c = itmpr.EffectDate;
                 pbe.UnitPrice = itmpr.UnitPrice1;
                 pbe.Infor_Unique_Key__c = uniqueKey;
                 pbe.Pricebook2Id = PbId;
+                pbe.currencyIsocode = itmpr.CurrCode;
+                pbe.IsActive = true;
                 
                 Product2 prodRef = new Product2(InforItemNumber__c = itmpr.ItemUniqueNum);
                 pbe.Product2 = prodRef;
-                if(!uniqueKey.contains('null')){
-                    listOfPBEs.add(pbe);
-                }
 
+                if(!uniqueKey.contains('null')){
+                    mapOfDistinctPrices.put(uniqueKey,pbe);
+                }
+                System.debug('uniqueKey=='+uniqueKey);
+                setOfUniqueIds.add(uniqueKey);
                 
                 //String uniq = idoCust.CustNum + idoCust.CustSeq;
-                //System.debug('uniq=='+uniq);
+                
 
             }
+            System.debug('setOfUniqueIds=='+setOfUniqueIds.size());
+            System.debug('mapOfDistinctPrices=='+mapOfDistinctPrices.values().size());
             Schema.SObjectField extId = PricebookEntry.getSobjectType().getDescribe().fields.getMap().get('Infor_Unique_Key__c');
-            Database.upsert(listOfPBEs,extId , false);
-            //upsert listOfPBEs Infor_Unique_Key__c;
+            //List<Database.UpsertResult> results = Database.upsert(listOfPBEs,extId , false);
+            List<Database.UpsertResult> results = Database.upsert(mapOfDistinctPrices.values(),extId , false);
+            for(Database.UpsertResult theResult:results) {
+                if(theResult.isSuccess())
+                  continue; // next item
+                List<Database.Error> errors = theResult.getErrors();
+                for(Database.Error theError:Errors) {
+                    System.debug('PBI Upsert error='+theError.getMessage() + ':' + theError.getFields());
+                }
+            }
 
         }
         system.debug('listOfIDO.size()=='+listOfIDO.size());

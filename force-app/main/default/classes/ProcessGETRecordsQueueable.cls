@@ -26,19 +26,28 @@ public with sharing class ProcessGETRecordsQueueable implements Queueable{
             InforGETCustomersWrapper r = (InforGETCustomersWrapper) JSON.deserialize(jsonConv, InforGETCustomersWrapper.class);
             GETCustomerController.processParsedResponse(r);
             System.debug('#parsed='+r);
+            HTTPHandler.updateSyncDateInCS('GET Accounts', datetime.now());
         }
         if(IDONameLower.contains('slcos')){
             InforGETOrdersWrapper r = (InforGETOrdersWrapper) JSON.deserialize(jsonConv, InforGETOrdersWrapper.class);
             GETOrderController.processParsedResponse(r);
+            HTTPHandler.updateSyncDateInCS('GET Orders', datetime.now());
         }
         if(IDONameLower.contains('slitems')){
             InforGETIemsWrapper r = (InforGETIemsWrapper) JSON.deserialize(jsonConv, InforGETIemsWrapper.class);
             GETItemController.processParsedResponse(r);
             System.debug('#parsed='+r);
+            HTTPHandler.updateSyncDateInCS('GET Products', datetime.now());
         }
         if(IDONameLower.contains('prices')){
             InforGETItemPricesWrapper r = (InforGETItemPricesWrapper) JSON.deserialize(jsonConv, InforGETItemPricesWrapper.class);
             GETItemPricesController.processParsedResponse(r);
+            HTTPHandler.updateSyncDateInCS('GET PBEs', datetime.now());
+        }
+        if(IDONameLower.contains('slcoitems')){
+            InforGETOrderItemsWrapper r = (InforGETOrderItemsWrapper) JSON.deserialize(jsonConv, InforGETOrderItemsWrapper.class);
+            GETOrderItemsController.processParsedResponse(r);
+            HTTPHandler.updateSyncDateInCS('GET Order Items', datetime.now());
         }
 
              
