@@ -128,4 +128,27 @@ public with sharing class GETOrderItemsController {
 
         return messageToRet;
     }
+
+    public static InforGETOrderItemsWrapper checkEmptyResponse(string jsonConv){
+        Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
+        Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
+        Map<String, Object> bodyMap = (Map<String, Object>)envMap.get('Body');
+        Map<String, Object> responseMap = (Map<String, Object>)bodyMap.get('LoadDataSetResponse');
+        Map<String, Object> resultMap = (Map<String, Object>)responseMap.get('LoadDataSetResult');
+        
+        System.debug('resultMap== '+resultMap);
+
+        InforGETOrderItemsWrapper r;
+        if(resultMap.containsKey('diffgram')){
+            if(resultMap.get('diffgram') == null || resultMap.get('diffgram') == ''){
+                r = null;
+            }
+            else{
+                InforGETOrderItemsWrapper r1 =  (InforGETOrderItemsWrapper)JSON.deserialize(jsonConv, InforGETOrderItemsWrapper.class);
+                r = r1;
+                System.debug('#r = '+ r);
+            }
+        }
+        return r;
+    }
 }

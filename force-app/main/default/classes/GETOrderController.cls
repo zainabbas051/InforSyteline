@@ -120,4 +120,30 @@ public with sharing class GETOrderController {
 
         return messageToRet;
     }
+
+    public static InforGETOrdersWrapper checkEmptyResponse(string jsonConv){
+        Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
+        Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
+        Map<String, Object> bodyMap = (Map<String, Object>)envMap.get('Body');
+        Map<String, Object> responseMap = (Map<String, Object>)bodyMap.get('LoadDataSetResponse');
+        Map<String, Object> resultMap = (Map<String, Object>)responseMap.get('LoadDataSetResult');
+        
+        System.debug('resultMap== '+resultMap);
+
+        InforGETOrdersWrapper r;
+        if(resultMap.containsKey('diffgram')){
+            if(resultMap.get('diffgram') == null || resultMap.get('diffgram') == ''){
+                r = null;
+            }
+            else{
+                InforGETOrdersWrapper r1 =  (InforGETOrdersWrapper)JSON.deserialize(jsonConv, InforGETOrdersWrapper.class);
+                r = r1;
+                System.debug('#r = '+ r);
+            }
+        }
+
+        //InforGETOrdersWrapper r = (InforGETOrdersWrapper) JSON.deserialize(jsonConv, InforGETOrdersWrapper.class);
+
+        return r;
+    }
 }

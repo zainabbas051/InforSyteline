@@ -175,4 +175,27 @@ public with sharing class GETItemPricesController {
 
         return messageToRet;
     }
+
+    public static InforGETItemPricesWrapper checkEmptyResponse(string jsonConv){
+        Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
+        Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
+        Map<String, Object> bodyMap = (Map<String, Object>)envMap.get('Body');
+        Map<String, Object> responseMap = (Map<String, Object>)bodyMap.get('LoadDataSetResponse');
+        Map<String, Object> resultMap = (Map<String, Object>)responseMap.get('LoadDataSetResult');
+        
+        System.debug('resultMap== '+resultMap);
+
+        InforGETItemPricesWrapper r;
+        if(resultMap.containsKey('diffgram')){
+            if(resultMap.get('diffgram') == null || resultMap.get('diffgram') == ''){
+                r = null;
+            }
+            else{
+                InforGETItemPricesWrapper r1 =  (InforGETItemPricesWrapper)JSON.deserialize(jsonConv, InforGETItemPricesWrapper.class);
+                r = r1;
+                System.debug('#r = '+ r);
+            }
+        }
+        return r;    
+    }
 }
