@@ -87,6 +87,11 @@ public with sharing class GETItemPricesController {
         Set<String> setOfUniqueIds = new set<string>();
         list<PricebookEntry> listOfPBEs = new list<PricebookEntry>();
 
+        set<String> setOFExternalIds = new Set<String>();
+        list<PricebookEntry> listOfPBEsToIns = new list<PricebookEntry>();
+        list<PricebookEntry> listOfPBEsToUpd = new list<PricebookEntry>();
+        map<String, String> mapOfExtIdsandSFIds = new map<String, String>();
+
         InforGETItemPricesWrapper.Envelope env = wrap.Envelope;
         InforGETItemPricesWrapper.Body b = env.Body;
         InforGETItemPricesWrapper.LoadDataSetResponse ldr = b.LoadDataSetResponse;
@@ -99,28 +104,58 @@ public with sharing class GETItemPricesController {
             for(InforGETItemPricesWrapper.IDO itmpr : listOfIDO){
 
                 string uniqueKey = itmpr.ItemUniqueNum+'|'+itmpr.CurrCode; //+'|'+itmpr.EffectDate;
-                PricebookEntry pbe = new PricebookEntry();
-                pbe.EffectDate__c = itmpr.EffectDate;
-                pbe.UnitPrice = itmpr.UnitPrice1;
-                pbe.Infor_Unique_Key__c = uniqueKey;
-                pbe.Pricebook2Id = PbId;
-                pbe.currencyIsocode = itmpr.CurrCode;
-                pbe.IsActive = true;
-                
-                Product2 prodRef = new Product2(InforItemNumber__c = itmpr.ItemUniqueNum);
-                pbe.Product2 = prodRef;
 
                 if(!uniqueKey.contains('null')){
+                    setOFExternalIds.add(uniqueKey);
+                    PricebookEntry pbe = new PricebookEntry();
+                    pbe.EffectDate__c = itmpr.EffectDate;
+                    pbe.UnitPrice = itmpr.UnitPrice1;
+                    pbe.Infor_Unique_Key__c = uniqueKey;
+                    pbe.Pricebook2Id = PbId;
+                    pbe.currencyIsocode = itmpr.CurrCode;
+                    pbe.IsActive = true;
+                    
+                    Product2 prodRef = new Product2(InforItemNumber__c = itmpr.ItemUniqueNum);
+                    pbe.Product2 = prodRef;
                     mapOfDistinctPrices.put(uniqueKey,pbe);
                 }
                 System.debug('uniqueKey=='+uniqueKey);
                 setOfUniqueIds.add(uniqueKey);
-                
-                //String uniq = idoCust.CustNum + idoCust.CustSeq;
-                
 
             }
-            System.debug('setOfUniqueIds=='+setOfUniqueIds.size());
+
+            for(PricebookEntry pbe: [select id, Infor_Unique_Key__c from PricebookEntry where Infor_Unique_Key__c IN : setOFExternalIds]){
+                mapOfExtIdsandSFIds.put(pbe.Infor_Unique_Key__c, pbe.id);
+            }
+
+            for(string pbeExtId: mapOfDistinctPrices.keySet()){
+                if(mapOfExtIdsandSFIds.containsKey(pbeExtId)){
+                    PricebookEntry pbeUpd = new PricebookEntry();
+                    pbeUpd.id = mapOfExtIdsandSFIds.get(pbeExtId);
+                    pbeUpd.UnitPrice = mapOfDistinctPrices.get(pbeExtId).UnitPrice;
+                    listOfPBEsToUpd.add(pbeUpd);
+                }
+                else{
+                    listOfPBEsToIns.add(mapOfDistinctPrices.get(pbeExtId));
+                }
+            }
+
+            try {
+                System.debug('listOfPBEsToUpd=='+listOfPBEsToUpd.size());
+                System.debug('listOfPBEsToIns=='+listOfPBEsToIns.size());
+                if(listOfPBEsToUpd.size() > 0){
+                    update listOfPBEsToUpd;
+                }
+                if(listOfPBEsToIns.size() > 0){
+                    insert listOfPBEsToIns;
+                }
+                messageToRet = 'Imported Successfully';
+            } 
+            catch (Exception e) {
+                messageToRet = 'An exception has occurred : ' + e.getMessage();
+            }
+
+            /*System.debug('setOfUniqueIds=='+setOfUniqueIds.size());
             System.debug('mapOfDistinctPrices=='+mapOfDistinctPrices.values().size());
             Schema.SObjectField extId = PricebookEntry.getSobjectType().getDescribe().fields.getMap().get('Infor_Unique_Key__c');
             //List<Database.UpsertResult> results = Database.upsert(listOfPBEs,extId , false);
@@ -132,7 +167,7 @@ public with sharing class GETItemPricesController {
                 for(Database.Error theError:Errors) {
                     System.debug('PBI Upsert error='+theError.getMessage() + ':' + theError.getFields());
                 }
-            }
+            }*/
 
         }
         system.debug('listOfIDO.size()=='+listOfIDO.size());
