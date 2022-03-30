@@ -13,7 +13,9 @@ public with sharing class GETItemController {
         string modDateFilter = '';
         if(ProdCsRec!= null && ProdCsRec.Last_Sync_Date__c != null)
         {
-            modDateFilter = 'RecordDate >= '+Date.valueOf(ProdCsRec.Last_Sync_Date__c);
+            date recDate =  Date.newInstance(ProdCsRec.Last_Sync_Date__c.year(), ProdCsRec.Last_Sync_Date__c.month(), ProdCsRec.Last_Sync_Date__c.day());
+            modDateFilter = 'RecordDate >= '+'\''+recDate+'\'';
+            //modDateFilter = 'RecordDate >= '+Date.valueOf(ProdCsRec.Last_Sync_Date__c);
         }
         if(!String.isBlank(qryFilter) && !String.isBlank(modDateFilter)){
             qryFilter += ' AND ' + modDateFilter;
@@ -46,15 +48,41 @@ public with sharing class GETItemController {
         string respBody = InforStylineCalloutsUtil.removeItemKeyword(resp.getBody());
         string jsonConv = serializer.XMLToJson(respBody);
         System.debug('#jsonConv='+jsonConv);
-        InforGETIemsWrapper r = (InforGETIemsWrapper) JSON.deserialize(jsonConv, InforGETIemsWrapper.class);
-        System.debug('r='+r);
 
+        Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
+        Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
+        Map<String, Object> bodyMap = (Map<String, Object>)envMap.get('Body');
+        Map<String, Object> responseMap = (Map<String, Object>)bodyMap.get('LoadDataSetResponse');
+        Map<String, Object> resultMap = (Map<String, Object>)responseMap.get('LoadDataSetResult');
+        
+        System.debug('resultMap== '+resultMap);
+
+        InforGETIemsWrapper r;
+        if(resultMap.containsKey('diffgram')){
+            if(resultMap.get('diffgram') == null || resultMap.get('diffgram') == ''){
+                r = null;
+            }
+            else{
+                InforGETIemsWrapper r1 =  (InforGETIemsWrapper)JSON.deserialize(jsonConv, InforGETIemsWrapper.class);
+                r = r1;
+                System.debug('#r = '+ r);
+            }
+        }
+
+        /*InforGETIemsWrapper r = (InforGETIemsWrapper) JSON.deserialize(jsonConv, InforGETIemsWrapper.class);
+        System.debug('r='+r);
+        */
 
         return r;
     }
 
     public static string processParsedResponse(InforGETIemsWrapper wrap){
         string messageToRet = '';
+        
+        if(wrap == null){
+            messageToRet = 'No Records Found';
+            return messageToRet;
+        }
         list<Product2> listOfProds = new list<Product2>();
 
         InforGETIemsWrapper.Envelope env = wrap.Envelope;

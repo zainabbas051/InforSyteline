@@ -8,6 +8,22 @@ public with sharing class GETOrderItemsController {
         string csRec = label.InforStyline_TestToyoConfig;
         string accToken = GetAccessTokenController.makeAccessTokenCallout(csRec);
         InforGETOrderItemsWrapper ItmPrWrap = new InforGETOrderItemsWrapper();
+        InforSytelineCalloutsConfigs__c OrdItemCsRec = InforSytelineCalloutsConfigs__c.getInstance('GET Orders');
+        string modDateFilter = '';
+        if(OrdItemCsRec!= null && OrdItemCsRec.Last_Sync_Date__c != null)
+        {
+            date recDate =  Date.newInstance(OrdItemCsRec.Last_Sync_Date__c.year(), OrdItemCsRec.Last_Sync_Date__c.month(), OrdItemCsRec.Last_Sync_Date__c.day());
+            modDateFilter = 'RecordDate >= '+'\''+recDate+'\'';
+           
+        }
+        if(!String.isBlank(qryFilter) && !String.isBlank(modDateFilter)){
+            qryFilter += ' AND ' + modDateFilter;
+        }
+        else if(String.isBlank(qryFilter) && !String.isBlank(modDateFilter))
+        {
+            qryFilter = modDateFilter;
+        }
+
         if(!String.isBlank(accToken)){
             httpResponse res = InforStylineCalloutsUtil.loadDataCall(accToken, IDOName, qryFlds, qryFilter, qryOrderBy, qryLimit);
             if(res.getStatusCode() == 200)
@@ -33,7 +49,28 @@ public with sharing class GETOrderItemsController {
         //replacing item tag as it is a keyword in json convert class
         string respBody = InforStylineCalloutsUtil.removeItemKeyword(resp.getBody());
         string jsonConv = serializer.XMLToJson(respBody);
-        InforGETOrderItemsWrapper r = (InforGETOrderItemsWrapper) JSON.deserialize(jsonConv, InforGETOrderItemsWrapper.class);
+
+        Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
+        Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
+        Map<String, Object> bodyMap = (Map<String, Object>)envMap.get('Body');
+        Map<String, Object> responseMap = (Map<String, Object>)bodyMap.get('LoadDataSetResponse');
+        Map<String, Object> resultMap = (Map<String, Object>)responseMap.get('LoadDataSetResult');
+        
+        System.debug('resultMap== '+resultMap);
+
+        InforGETOrderItemsWrapper r;
+        if(resultMap.containsKey('diffgram')){
+            if(resultMap.get('diffgram') == null || resultMap.get('diffgram') == ''){
+                r = null;
+            }
+            else{
+                InforGETOrderItemsWrapper r1 =  (InforGETOrderItemsWrapper)JSON.deserialize(jsonConv, InforGETOrderItemsWrapper.class);
+                r = r1;
+                System.debug('#r = '+ r);
+            }
+        }
+
+        //InforGETOrderItemsWrapper r = (InforGETOrderItemsWrapper) JSON.deserialize(jsonConv, InforGETOrderItemsWrapper.class);
 
         return r;
     }
@@ -41,6 +78,12 @@ public with sharing class GETOrderItemsController {
 
     public static string processParsedResponse(InforGETOrderItemsWrapper wrap){
         string messageToRet = '';
+
+        if(wrap == null){
+            messageToRet = 'No Records Found';
+            return messageToRet;
+        }
+
         list<OrderItem> listOfOLIs = new list<OrderItem>();
 
         InforGETOrderItemsWrapper.Envelope env = wrap.Envelope;

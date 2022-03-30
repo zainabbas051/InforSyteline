@@ -12,7 +12,9 @@ public with sharing class GETItemPricesController {
         string modDateFilter = '';
         if(PBECsRec!= null && PBECsRec.Last_Sync_Date__c != null)
         {
-            modDateFilter = 'RecordDate >= '+Date.valueOf(PBECsRec.Last_Sync_Date__c);
+            date recDate =  Date.newInstance(PBECsRec.Last_Sync_Date__c.year(), PBECsRec.Last_Sync_Date__c.month(), PBECsRec.Last_Sync_Date__c.day());
+            modDateFilter = 'RecordDate >= '+'\''+recDate+'\'';
+            //modDateFilter = 'RecordDate >= '+Date.valueOf(PBECsRec.Last_Sync_Date__c);
         }
         if(!String.isBlank(qryFilter) && !String.isBlank(modDateFilter)){
             qryFilter += ' AND ' + modDateFilter;
@@ -46,7 +48,28 @@ public with sharing class GETItemPricesController {
         //replacing item tag as it is a keyword in json convert class
         string respBody = InforStylineCalloutsUtil.removeItemKeyword(resp.getBody());
         string jsonConv = serializer.XMLToJson(respBody);
-        InforGETItemPricesWrapper r = (InforGETItemPricesWrapper) JSON.deserialize(jsonConv, InforGETItemPricesWrapper.class);
+        
+        Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
+        Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
+        Map<String, Object> bodyMap = (Map<String, Object>)envMap.get('Body');
+        Map<String, Object> responseMap = (Map<String, Object>)bodyMap.get('LoadDataSetResponse');
+        Map<String, Object> resultMap = (Map<String, Object>)responseMap.get('LoadDataSetResult');
+        
+        System.debug('resultMap== '+resultMap);
+
+        InforGETItemPricesWrapper r;
+        if(resultMap.containsKey('diffgram')){
+            if(resultMap.get('diffgram') == null || resultMap.get('diffgram') == ''){
+                r = null;
+            }
+            else{
+                InforGETItemPricesWrapper r1 =  (InforGETItemPricesWrapper)JSON.deserialize(jsonConv, InforGETItemPricesWrapper.class);
+                r = r1;
+                System.debug('#r = '+ r);
+            }
+        }
+
+        //InforGETItemPricesWrapper r = (InforGETItemPricesWrapper) JSON.deserialize(jsonConv, InforGETItemPricesWrapper.class);
 
         return r;
     }
@@ -54,6 +77,11 @@ public with sharing class GETItemPricesController {
 
     public static string processParsedResponse(InforGETItemPricesWrapper wrap){
         string messageToRet = '';
+
+        if(wrap == null){
+            messageToRet = 'No Records Found';
+            return messageToRet;
+        }
 
         string PbId = [select id from Pricebook2 where IsStandard = true].id;
         Set<String> setOfUniqueIds = new set<string>();

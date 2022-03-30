@@ -12,7 +12,9 @@ public with sharing class GETOrderController {
         string modDateFilter = '';
         if(OrdCsRec!= null && OrdCsRec.Last_Sync_Date__c != null)
         {
-            modDateFilter = 'RecordDate >= '+Date.valueOf(OrdCsRec.Last_Sync_Date__c);
+            date recDate =  Date.newInstance(OrdCsRec.Last_Sync_Date__c.year(), OrdCsRec.Last_Sync_Date__c.month(), OrdCsRec.Last_Sync_Date__c.day());
+            modDateFilter = 'RecordDate >= '+'\''+recDate+'\'';
+            //modDateFilter = 'RecordDate >= '+Date.valueOf(OrdCsRec.Last_Sync_Date__c);
         }
         if(!String.isBlank(qryFilter) && !String.isBlank(modDateFilter)){
             qryFilter += ' AND ' + modDateFilter;
@@ -47,13 +49,40 @@ public with sharing class GETOrderController {
         //replacing item tag as it is a keyword in json convert class
         string respBody = InforStylineCalloutsUtil.removeItemKeyword(resp.getBody());
         string jsonConv = serializer.XMLToJson(respBody);
-        InforGETOrdersWrapper r = (InforGETOrdersWrapper) JSON.deserialize(jsonConv, InforGETOrdersWrapper.class);
+
+        Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
+        Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
+        Map<String, Object> bodyMap = (Map<String, Object>)envMap.get('Body');
+        Map<String, Object> responseMap = (Map<String, Object>)bodyMap.get('LoadDataSetResponse');
+        Map<String, Object> resultMap = (Map<String, Object>)responseMap.get('LoadDataSetResult');
+        
+        System.debug('resultMap== '+resultMap);
+
+        InforGETOrdersWrapper r;
+        if(resultMap.containsKey('diffgram')){
+            if(resultMap.get('diffgram') == null || resultMap.get('diffgram') == ''){
+                r = null;
+            }
+            else{
+                InforGETOrdersWrapper r1 =  (InforGETOrdersWrapper)JSON.deserialize(jsonConv, InforGETOrdersWrapper.class);
+                r = r1;
+                System.debug('#r = '+ r);
+            }
+        }
+
+        //InforGETOrdersWrapper r = (InforGETOrdersWrapper) JSON.deserialize(jsonConv, InforGETOrdersWrapper.class);
 
         return r;
     }
 
     public static string processParsedResponse(InforGETOrdersWrapper wrap){
         string messageToRet = '';
+
+        if(wrap == null){
+            messageToRet = 'No Records Found';
+            return messageToRet;
+        }
+
         list<Order> listOfOrders = new list<Order>();
 
         InforGETOrdersWrapper.Envelope env = wrap.Envelope;
