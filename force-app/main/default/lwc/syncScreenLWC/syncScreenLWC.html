@@ -1,0 +1,14 @@
+<template>
+    <lightning-card  variant="Narrow"  title="Sync with Infor Syteline" style="text-align: center;">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <lightning-formatted-rich-text value={dboxmsg}></lightning-formatted-rich-text>
+        </div>
+        <div style="text-align: center;">
+            <lightning-button variant="brand" label="Sync Customers" title="Sync Customers" onclick={syncCustomers} class="slds-m-left_x-small"></lightning-button>
+            <lightning-button variant="brand" label="Sync Products" title="Sync Products" onclick={syncProducts} class="slds-m-left_x-small"></lightning-button>
+            <lightning-button variant="brand" label="Sync Prices" title="Sync Product Prices" onclick={syncPricing} class="slds-m-left_x-small"></lightning-button>
+            <lightning-button variant="brand" label="Sync Orders" title="Sync Orders" onclick={syncOrders} class="slds-m-left_x-small"></lightning-button>
+            <lightning-button variant="brand" label="Sync Orders Items" title="Sync Orders Items" onclick={syncOrderItems} class="slds-m-left_x-small"></lightning-button>
+        </div>
+    </lightning-card>
+</template>

@@ -36,7 +36,7 @@ public without sharing class CreateRecordXMLUtility {
         
         xmlToReturn += '<diffgr:diffgram xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">';
         xmlToReturn += '<'+IDOName+' xmlns="">';
-        Integer i = 1;
+        Integer i = 0;
         for(string sfID :mapOfSObject.keySet()){
             
             sObject rec = mapOfSObject.get(sfID);
@@ -44,12 +44,13 @@ public without sharing class CreateRecordXMLUtility {
             i++;
             for(string InfoProp: mapOfIDOFieldsAndTypes.keySet()){
                 string SffieldName = mapOfMapping.containsKey(InfoProp) ? mapOfMapping.get(InfoProp) : 'Name';
-                if(InfoProp == 'CustSeq'){
+                /*if(InfoProp == 'CustSeq'){
                     xmlToReturn += '<'+InfoProp+'>'+'1'+'</'+InfoProp+'>';
                 }
                 else {
                     xmlToReturn += '<'+InfoProp+'>'+ rec.get(SffieldName)+'</'+InfoProp+'>';
-                }
+                }*/
+                xmlToReturn += '<'+InfoProp+'>'+ rec.get(SffieldName)+'</'+InfoProp+'>';
             }
             xmlToReturn += '</IDO>';
             

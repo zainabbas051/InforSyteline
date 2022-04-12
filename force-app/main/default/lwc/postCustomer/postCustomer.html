@@ -1,0 +1,24 @@
+<template>
+    <lightning-quick-action-panel header="Push to Infor Syteline" >
+        <!-- When Message retrived from Backend-->
+        <template if:true={loaded}>
+            <template if:true={iconVisibility}>
+                <div class="slds-align_absolute-center">
+                    <lightning-icon icon-name="action:approval" alternative-text="Success" title="Success"></lightning-icon>
+                </div>
+            </template>
+            <template if:false={iconVisibility}>
+                <div class="slds-align_absolute-center">
+                    <lightning-icon icon-name="action:close" alternative-text="Error" title="Error"></lightning-icon>
+                </div>
+            </template>
+            <lightning-formatted-rich-text value={dboxmsg}></lightning-formatted-rich-text>
+    </template>
+    <!-- Loader -->
+    <template if:true={showLoader}>
+        <div class="slds-align_absolute-center">
+            <lightning-spinner style="position: relative; display: inline-block; width: 80px; height: 80px;" alternative-text="Loading" size="medium"></lightning-spinner>
+        </div>
+    </template>
+   </lightning-quick-action-panel>
+</template>
