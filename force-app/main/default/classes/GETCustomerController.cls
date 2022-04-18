@@ -43,7 +43,8 @@ public without sharing class GETCustomerController {
 
     public static InforGETCustomersWrapper parsedResponse(HttpResponse resp){
         XMLSerializer serializer = new XMLSerializer();
-        string jsonConv = serializer.XMLToJson(resp.getBody());
+        //string jsonConv = serializer.XMLToJson(resp.getBody());
+        String jsonConv = serializer.xmlToJSON(resp.getBody(), new set<String>{'IDO'});
         System.debug('#jsonConv='+jsonConv);
         Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
         Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
@@ -59,11 +60,14 @@ public without sharing class GETCustomerController {
                 r = null;
             }
             else{
+                
                 InforGETCustomersWrapper r1 =  (InforGETCustomersWrapper)JSON.deserialize(jsonConv, InforGETCustomersWrapper.class);
                 r = r1;
                 System.debug('#r = '+ r);
             }
         }
+
+        //InforGETCustomersWrapper r = (InforGETCustomersWrapper) JSON.deserialize(jsonConv, InforGETCustomersWrapper.class);
         
 
         return r;
@@ -75,6 +79,8 @@ public without sharing class GETCustomerController {
         string messageToRet = '';
         if(wrap == null){
             messageToRet = 'No Records Found';
+            string body = 'No Records to Sync from Infor Syteline';
+            GenerateNotification(0, 0, body);
             return messageToRet;
         }
 
@@ -136,13 +142,27 @@ public without sharing class GETCustomerController {
                 //System.debug('uniq=='+uniq);
 
             }
+            Integer totalRecs = listOfAccount.size();
+            Integer successRecs = 0;
+            Integer errorRecs = 0;
             try{
-                upsert listOfAccount Infor_Customer_External_Id__c;
+                Schema.SObjectField extId = Account.getSobjectType().getDescribe().fields.getMap().get('Infor_Customer_External_Id__c');
+                list<Database.UpsertResult> results = Database.upsert(listOfAccount, extId, false);
+                for(Database.UpsertResult rs : results)
+                {
+                    if(rs.isSuccess()){
+                        successRecs++;
+                    }
+                }
+                //upsert listOfAccount Infor_Customer_External_Id__c;
                 messageToRet = 'Imported Successfully';
             }
             catch(Exception e){
                 messageToRet = 'An exception has occurred : ' + e.getMessage();
             }
+            errorRecs = totalRecs - successRecs;
+            string body = 'Customers Retrieval from Infor Syteline has been completed! \r\n Succes Records : '+ successRecs + '\r\n Error Records : '+ errorRecs;
+            GenerateNotification(successRecs, errorRecs, body);
 
         }
         return messageToRet;
@@ -202,13 +222,21 @@ public without sharing class GETCustomerController {
                 }
 
             }
-
+            Integer totalRecs = listOfAccounttoInsert.size() + listOfAccounttoUpdate.size();
+            Integer successRecs = 0;
+            Integer errorRecs = 0;
             if (listOfAccounttoInsert.size() > 0) {
                 System.debug('Insert List Size() == '+ listOfAccounttoInsert.size());
                 try {
-                    insert listOfAccounttoInsert;
-
-                } 
+                    //insert listOfAccounttoInsert;
+                    Database.SaveResult[] resultList = Database.insert(listOfAccounttoInsert, false);
+                    for(Database.SaveResult rs : resultList)
+                    {
+                        if(rs.isSuccess()){
+                            successRecs++;
+                        }
+                    }
+                }
                 catch (Exception e) {
                     messageToRet = 'An exception has occurred : ' + e.getMessage();
                 }
@@ -216,13 +244,25 @@ public without sharing class GETCustomerController {
             if(listOfAccounttoUpdate.size() > 0){
                 System.debug('Update List Size() == '+ listOfAccounttoUpdate.size());
                 try {
-                    update listOfAccounttoUpdate;
-                } 
+                    //update listOfAccounttoUpdate;
+                    Database.SaveResult[] resultList = Database.update(listOfAccounttoUpdate, false);
+                    for(Database.SaveResult rs : resultList)
+                    {
+                        if(rs.isSuccess()){
+                            successRecs++;
+                        }
+                    }
+                }
                 catch (Exception e) {
                     messageToRet = 'An exception has occurred : ' + e.getMessage();
                 }
             }
+
+            errorRecs = totalRecs - successRecs;
+            string body = 'Customers Retrieval from Infor Syteline has been completed! \r\n Succes Records : '+ successRecs + '\r\n Error Records : '+ errorRecs;
+            GenerateNotification(successRecs, errorRecs, body);
         }
+        
         return messageToRet;
 
     }
@@ -251,6 +291,17 @@ public without sharing class GETCustomerController {
         
 
         return r;
+    }
+
+    public static void GenerateNotification(integer succCount, integer errCount, string body){
+        Messaging.CustomNotification notification = new Messaging.CustomNotification();
+        notification.setBody(body);
+        notification.setTitle('Customers Retrieval Completed!');
+        notification.setSenderId(Userinfo.getUserId());
+        CustomNotificationType type = [SELECT Id FROM CustomNotificationType WHERE DeveloperName = 'Infor_Processing_Complete_Notification'];
+        notification.setNotificationTypeId(type.id);
+        notification.setTargetId('000000000000000AAA'); // target object id
+        notification.send(new Set<String> { Userinfo.getUserId() });
     }
 
 }

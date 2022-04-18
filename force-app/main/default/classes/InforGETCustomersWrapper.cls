@@ -28,8 +28,9 @@ public class InforGETCustomersWrapper {
 	}
 	
 	public class SLCustomers {
-		public List<IDO> IDO {get;set;} 
-
+		public List<IDO> IDO {get;set;}
+		public IDO IDOSingle {get; set;}
+		
 	}
 	
 	public class Sequence {

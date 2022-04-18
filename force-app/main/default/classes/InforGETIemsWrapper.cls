@@ -55,6 +55,7 @@ public  class InforGETIemsWrapper {
 		public decimal DerQtyOnHand {get; set;}
 		public dateTime EffectDate {get; set;}
 		public string ProductCode {get; set;}
+		public string Overview {get; set;}
 	}
 	
 	public class ComplexType {

@@ -18,7 +18,8 @@ public with sharing class ProcessGETRecordsQueueable implements Queueable{
         //replacing item tag as it is a keyword in json convert class
         string validStr = InforStylineCalloutsUtil.removeItemKeyword(respBody);
         
-        string jsonConv = serializer.XMLToJson(validStr);
+        // string jsonConv = serializer.XMLToJson(validStr);
+        String jsonConv = serializer.xmlToJSON(validStr, new set<String>{'IDO'});
         string IDONameLower = IDOName.toLowerCase();
         System.debug('#jsonConv='+jsonConv);
         

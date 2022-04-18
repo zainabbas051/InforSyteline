@@ -47,7 +47,8 @@ public with sharing class GETItemPricesController {
         XMLSerializer serializer = new XMLSerializer();
         //replacing item tag as it is a keyword in json convert class
         string respBody = InforStylineCalloutsUtil.removeItemKeyword(resp.getBody());
-        string jsonConv = serializer.XMLToJson(respBody);
+        // string jsonConv = serializer.XMLToJson(respBody);
+        String jsonConv = serializer.xmlToJSON(resp.getBody(), new set<String>{'IDO'});
         
         Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
         Map<String, Object> envMap = (Map<String, Object>)JsonDeserialMap.get('Envelope');
@@ -80,10 +81,12 @@ public with sharing class GETItemPricesController {
 
         if(wrap == null){
             messageToRet = 'No Records Found';
+            string body = 'No Records to Retrieve from Infor Syteline';
+            GenerateNotification(0, 0, body);
             return messageToRet;
         }
 
-        string PbId = [select id from Pricebook2 where IsStandard = true].id;
+        string PbId = [select id from Pricebook2 where IsStandard = true and isactive = true limit 1].id;
         Set<String> setOfUniqueIds = new set<string>();
         list<PricebookEntry> listOfPBEs = new list<PricebookEntry>();
 
@@ -139,35 +142,40 @@ public with sharing class GETItemPricesController {
                     listOfPBEsToIns.add(mapOfDistinctPrices.get(pbeExtId));
                 }
             }
-
+            Integer totalRecs = listOfPBEsToIns.size() + listOfPBEsToUpd.size();
+            Integer successRecs = 0;
+            Integer errorRecs = 0;
             try {
-                System.debug('listOfPBEsToUpd=='+listOfPBEsToUpd.size());
-                System.debug('listOfPBEsToIns=='+listOfPBEsToIns.size());
+               
                 if(listOfPBEsToUpd.size() > 0){
-                    update listOfPBEsToUpd;
+
+                    Database.SaveResult[] resultList = Database.update(listOfPBEsToUpd, false);
+                    for(Database.SaveResult rs : resultList)
+                    {
+                        if(rs.isSuccess()){
+                            successRecs++;
+                        }
+                    }
+                    //update listOfPBEsToUpd;
                 }
                 if(listOfPBEsToIns.size() > 0){
-                    insert listOfPBEsToIns;
+                    Database.SaveResult[] resultList = Database.insert(listOfPBEsToIns, false);
+                    for(Database.SaveResult rs : resultList)
+                    {
+                        if(rs.isSuccess()){
+                            successRecs++;
+                        }
+                    }
+                    //insert listOfPBEsToIns;
                 }
                 messageToRet = 'Imported Successfully';
             } 
             catch (Exception e) {
                 messageToRet = 'An exception has occurred : ' + e.getMessage();
             }
-
-            /*System.debug('setOfUniqueIds=='+setOfUniqueIds.size());
-            System.debug('mapOfDistinctPrices=='+mapOfDistinctPrices.values().size());
-            Schema.SObjectField extId = PricebookEntry.getSobjectType().getDescribe().fields.getMap().get('Infor_Unique_Key__c');
-            //List<Database.UpsertResult> results = Database.upsert(listOfPBEs,extId , false);
-            List<Database.UpsertResult> results = Database.upsert(mapOfDistinctPrices.values(),extId , false);
-            for(Database.UpsertResult theResult:results) {
-                if(theResult.isSuccess())
-                  continue; // next item
-                List<Database.Error> errors = theResult.getErrors();
-                for(Database.Error theError:Errors) {
-                    System.debug('PBI Upsert error='+theError.getMessage() + ':' + theError.getFields());
-                }
-            }*/
+            errorRecs = totalRecs - successRecs;
+            string body = 'Item Prices Retrieval from Infor Syteline has been completed! \r\n Succes Records : '+ successRecs + '\r\n Error Records : '+ errorRecs;
+            GenerateNotification(successRecs, errorRecs, body);
 
         }
         system.debug('listOfIDO.size()=='+listOfIDO.size());
@@ -197,5 +205,16 @@ public with sharing class GETItemPricesController {
             }
         }
         return r;    
+    }
+
+    public static void GenerateNotification(integer succCount, integer errCount, string body){
+        Messaging.CustomNotification notification = new Messaging.CustomNotification();
+        notification.setBody(body);
+        notification.setTitle('Items Prices Retrieval Completed!');
+        notification.setSenderId(Userinfo.getUserId());
+        CustomNotificationType type = [SELECT Id FROM CustomNotificationType WHERE DeveloperName = 'Infor_Processing_Complete_Notification'];
+        notification.setNotificationTypeId(type.id);
+        notification.setTargetId('000000000000000AAA'); // target object id
+        notification.send(new Set<String> { Userinfo.getUserId() });
     }
 }

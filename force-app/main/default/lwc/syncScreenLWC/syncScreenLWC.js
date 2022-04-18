@@ -1,77 +1,86 @@
-import { LightningElement } from 'lwc';
-import SyncScreenController from '@salesforce/apex/SyncScreenController.callSyncMethods';
+import { LightningElement } from "lwc";
+import { ShowToastEvent } from "lightning/platformShowToastEvent";
+import SyncScreenController from "@salesforce/apex/SyncScreenController.callSyncMethods";
 
 export default class SyncScreenLWC1 extends LightningElement {
-
   dboxmsg;
-    syncProducts(event){
- 
-        SyncScreenController({ syncType: 'Products' })
-          .then(result => {
-            console.log('Result', result);
-            this.dboxmsg = '<strong>' + result + '</strong><br/>';
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            this.dboxmsg = '<strong>' + error + '</strong><br/>';
-        });
-    
-    }
 
-    syncOrderItems(event){
- 
-        SyncScreenController({ syncType: 'OrderItems' })
-          .then(result => {
-            console.log('Result', result);
-            this.dboxmsg = '<strong>' + result + '</strong><br/>';
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            this.dboxmsg = '<strong>' + error + '</strong><br/>';
-        });
-    
-    }
+  makeToast = (title, message, variant) => {
+    const toastEvent = new ShowToastEvent({
+      title,
+      message,
+      variant
+    });
+    this.dispatchEvent(toastEvent);
+  };
 
-    syncPricing(event){
- 
-        SyncScreenController({ syncType: 'Pricing' })
-          .then(result => {
-            console.log('Result', result);
-            this.dboxmsg = '<strong>' + result + '</strong><br/>';
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            this.dboxmsg = '<strong>' + error + '</strong><br/>';
-        });
-    
-    }
-
-    syncCustomers(event){
- 
-        SyncScreenController({ syncType: 'Customers' })
-          .then(result => {
-            console.log('Result', result);
-            this.dboxmsg = '<strong>' + result + '</strong><br/>';
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            this.dboxmsg = '<strong>' + error + '</strong><br/>';
-        });
-    
-    }
-
-    syncOrders(event){
- 
-      SyncScreenController({ syncType: 'Orders' })
-        .then(result => {
-          console.log('Result', result);
-          this.dboxmsg = '<strong>' + result + '</strong><br/>';
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          this.dboxmsg = '<strong>' + error + '</strong><br/>';
+  syncProducts(event) {
+    SyncScreenController({ syncType: "Products" })
+      .then((result) => {
+        console.log("Result", result);
+        this.dboxmsg = "<strong>" + result + "</strong><br/>";
+        this.makeToast("Success: Request Submitted!", result, "success");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        this.dboxmsg = "<strong>" + error + "</strong><br/>";
+        this.makeToast("Error", error, "error");
       });
-  
   }
 
+  syncOrderItems(event) {
+    SyncScreenController({ syncType: "OrderItems" })
+      .then((result) => {
+        console.log("Result", result);
+        this.dboxmsg = "<strong>" + result + "</strong><br/>";
+        this.makeToast("Success: Request Submitted!", result, "success");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        this.dboxmsg = "<strong>" + error + "</strong><br/>";
+        this.makeToast("Error", error, "error");
+      });
+  }
+
+  syncPricing(event) {
+    SyncScreenController({ syncType: "Pricing" })
+      .then((result) => {
+        console.log("Result", result);
+        this.dboxmsg = "<strong>" + result + "</strong><br/>";
+        this.makeToast("Success: Request Submitted!", result, "success");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        this.dboxmsg = "<strong>" + error + "</strong><br/>";
+        this.makeToast("Error", error, "error");
+      });
+  }
+
+  syncCustomers(event) {
+    SyncScreenController({ syncType: "Customers" })
+      .then((result) => {
+        console.log("Result", result);
+        this.dboxmsg = "<strong>" + result + "</strong><br/>";
+        this.makeToast("Success: Request Submitted!", result, "success");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        this.dboxmsg = "<strong>" + error + "</strong><br/>";
+        this.makeToast("Error", error, "error");
+      });
+  }
+
+  syncOrders(event) {
+    SyncScreenController({ syncType: "Orders" })
+      .then((result) => {
+        console.log("Result", result);
+        this.dboxmsg = "<strong>" + result + "</strong><br/>";
+        this.makeToast("Success: Request Submitted!", result, "success");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        this.dboxmsg = "<strong>" + error + "</strong><br/>";
+        this.makeToast("Error", error, "error");
+      });
+  }
 }

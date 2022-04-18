@@ -46,7 +46,8 @@ public with sharing class GETItemController {
         
         //replacing item tag as it is a keyword in json convert class
         string respBody = InforStylineCalloutsUtil.removeItemKeyword(resp.getBody());
-        string jsonConv = serializer.XMLToJson(respBody);
+        // string jsonConv = serializer.XMLToJson(respBody);
+        String jsonConv = serializer.xmlToJSON(resp.getBody(), new set<String>{'IDO'});
         System.debug('#jsonConv='+jsonConv);
 
         Map<String, Object> JsonDeserialMap = (Map<String, Object>) JSON.deserializeUntyped(jsonConv);
@@ -69,10 +70,6 @@ public with sharing class GETItemController {
             }
         }
 
-        /*InforGETIemsWrapper r = (InforGETIemsWrapper) JSON.deserialize(jsonConv, InforGETIemsWrapper.class);
-        System.debug('r='+r);
-        */
-
         return r;
     }
 
@@ -80,6 +77,8 @@ public with sharing class GETItemController {
         string messageToRet = '';
         
         if(wrap == null){
+            string body = 'No Records to Retrieve from Infor Syteline';
+            GenerateNotification(0, 0, body);
             messageToRet = 'No Records Found';
             return messageToRet;
         }
@@ -101,15 +100,33 @@ public with sharing class GETItemController {
                 prod.InforItemNumber__c = idoItem.ItemUniqueNum;
                 prod.Stock_Quantity__c = idoItem.DerQtyOnHand;
                 prod.ProductCode = idoItem.ProductCode;
-                prod.Description = idoItem.Description;
-
+                prod.Description = idoItem.Description + ' - Overview : ' + idoItem.Overview;
+                prod.isActive = true;
+                string nameNDesc = idoItem.ItemUniqueNum + ' - '+idoItem.Description;
+                if(nameNDesc != null && nameNDesc.length() > 80){
+                    nameNDesc = nameNDesc.subString(0,78);
+                }
+                prod.Name = nameNDesc;
                 if(!String.isBlank(idoItem.ItemUniqueNum) || !idoItem.ItemUniqueNum.contains('null')){
                     listOfProds.add(prod);
                 }
                 
+                
             }
+            Integer totalRecs = listOfProds.size();
+            Integer successRecs = 0;
+            Integer errorRecs = 0;
             Schema.SObjectField extId = Product2.getSobjectType().getDescribe().fields.getMap().get('InforItemNumber__c');
-            Database.upsert(listOfProds,extId , false);
+            list<Database.UpsertResult> results = Database.upsert(listOfProds,extId , false);
+            for(Database.UpsertResult rs : results)
+            {
+                if(rs.isSuccess()){
+                    successRecs++;
+                }
+            }
+            errorRecs = totalRecs - successRecs;
+            string body = 'Items Retrieval from Infor Syteline has been completed! \r\n Succes Records : '+ successRecs + '\r\n Error Records : '+ errorRecs;
+            GenerateNotification(successRecs, errorRecs, body);
             
         }
  
@@ -138,4 +155,16 @@ public with sharing class GETItemController {
         }
         return r;
     }
+
+    public static void GenerateNotification(integer succCount, integer errCount, string body){
+        Messaging.CustomNotification notification = new Messaging.CustomNotification();
+        notification.setBody(body);
+        notification.setTitle('Items Retrieval Completed!');
+        notification.setSenderId(Userinfo.getUserId());
+        CustomNotificationType type = [SELECT Id FROM CustomNotificationType WHERE DeveloperName = 'Infor_Processing_Complete_Notification'];
+        notification.setNotificationTypeId(type.id);
+        notification.setTargetId('000000000000000AAA'); // target object id
+        notification.send(new Set<String> { Userinfo.getUserId() });
+    }
+
 }
