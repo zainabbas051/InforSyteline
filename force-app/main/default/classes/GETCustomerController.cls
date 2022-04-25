@@ -115,13 +115,13 @@ public without sharing class GETCustomerController {
             for(InforGETCustomersWrapper.IDO idoCust : listOfIDO){
                 string streetAdd = '';
                 if(!String.isBlank(idoCust.Addr_1)){
-                    streetAdd += idoCust.Addr_1;
+                    streetAdd += idoCust.Addr_1 + ' ';
                 }
                 if(!String.isBlank(idoCust.Addr_2)){
-                    streetAdd += idoCust.Addr_2;
+                    streetAdd += idoCust.Addr_2 + ' ';
                 }
                 if(!String.isBlank(idoCust.Addr_3)){
-                    streetAdd += idoCust.Addr_3;
+                    streetAdd += idoCust.Addr_3 + ' ';
                 }
                 if(!String.isBlank(idoCust.Addr_4)){
                     streetAdd += idoCust.Addr_4;
@@ -191,13 +191,13 @@ public without sharing class GETCustomerController {
                 string extID = idoCust.CustNum +'-'+ idoCust.CustSeq;
                 string streetAdd = '';
                 if(!String.isBlank(idoCust.Addr_1)){
-                    streetAdd += idoCust.Addr_1;
+                    streetAdd += idoCust.Addr_1 + ' ';
                 }
                 if(!String.isBlank(idoCust.Addr_2)){
-                    streetAdd += idoCust.Addr_2;
+                    streetAdd += idoCust.Addr_2 + ' ';
                 }
                 if(!String.isBlank(idoCust.Addr_3)){
-                    streetAdd += idoCust.Addr_3;
+                    streetAdd += idoCust.Addr_3 + ' ';
                 }
                 if(!String.isBlank(idoCust.Addr_4)){
                     streetAdd += idoCust.Addr_4;
